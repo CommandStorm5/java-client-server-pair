@@ -190,6 +190,14 @@ public class Server {
                 players.get(i).set(1, 1);
             }
         }
+        if (data.equals("kill")) {
+            //Set specific player's coordinate to [0,0]
+            System.out.println("Player ID:");
+            Scanner s = new Scanner(System.in);
+            int i = s.nextInt();
+            players.get(i).set(0, 0);
+            players.get(i).set(1, 0);
+        }
         if (data.equals("respawn all")) {
             for (int i = 0; i < players.size(); i++) {
                 if (players.get(i).get(0) == 0 && players.get(i).get(1) == 0) {
