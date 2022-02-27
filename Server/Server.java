@@ -66,23 +66,24 @@ public class Server {
                             try {
                                 ServerSocket handshake_ss = generateServerSocket(420);
                                 Socket handshake_s = establishConnection(handshake_ss);
-                                System.out.println("Handshake");
+                                System.out.println("Connection: Handshake");
                                 DataOutputStream handshake_dout = new DataOutputStream(handshake_s.getOutputStream());
                                 int portNumber = 421;
                                 while (true) {
-                                    System.out.println(portNumber);
                                     if (!ports.contains(portNumber)) {
                                         break;
                                     }
                                     portNumber++;
                                 }
+                                System.out.println("Connection: Client ID " + ss.size());
+                                System.out.println("Connection: Port " + portNumber);
                                 ports.add(portNumber);
                                 handshake_dout.writeInt(portNumber);
                                 handshake_dout.flush();
                                 handshake_dout.close();
                                 handshake_s.close();
                                 handshake_ss.close();
-                                System.out.println("closed");
+                                System.out.println("Connection: Handshake closed");
                                 ss.add(generateServerSocket(portNumber));
                                 s.add(establishConnection(ss.get(ss.size()-1)));
                                 din.add(new DataInputStream(s.get(s.size()-1).getInputStream()));
@@ -105,21 +106,20 @@ public class Server {
                     if (s.size() == 0) {
                         System.out.println("Waiting for initial");
                         while (!await_new_client.isDone()) {
-
+                            try {
+                                TimeUnit.MILLISECONDS.sleep(100);
+                            } catch (Exception e) {
+                                System.err.println("Failed to wait 100ms lmao");
+                            }
                         }
-                        System.out.println("Initial recieved");
                     }
                 }
                 while (players.size() == 0) {
-                    System.out.println("Waiting for players");
                 }
                 byte[] responses = new byte[players.size()];
-                System.out.println(players.size());
                 for (int i = 0; i < players.size(); i++) {
                     try {
                         responses[i]=(byte)din.get(i).read();
-                        System.out.println("Response: " + i);
-                        System.out.println(responses[i]);
                         if ((responses[i] & (byte)0b00000001) == 1) {
                             disconnect(i);
                         }
@@ -129,12 +129,12 @@ public class Server {
                     }
 
                 }
-                System.out.println("Responses L: " + responses.length);
+                //System.out.println("Responses L: " + responses.length);
                 if (responses.length > 0) {
                     render = gameTick(responses);
 
                     for (int i = 0; i < players.size(); i++) {
-                        System.out.println("Writing: " + i);
+                        //System.out.println("Writing: " + i);
                         try {
                             dout.get(i).writeUTF(render);
                             dout.get(i).flush();
@@ -173,12 +173,12 @@ public class Server {
             dout.get(n).close();
             s.get(n).close();
             ss.get(n).close();
+            System.out.println("Player " + n + " disconnected");
         } catch (Exception e) {
             System.err.println("gracefulDisconnect: " + e);
         }
     }
     public static void disconnect(int n) {
-        System.out.println("Removing: " + n);
         players.remove(n);
         ports.remove(n);
         dout.remove(n);
@@ -194,6 +194,7 @@ public class Server {
             }
         }
         if (data.equals("respawn")) {
+            System.out.println("Player ID:");
             Scanner s = new Scanner(System.in);
             int i = s.nextInt();
             if (players.get(i).get(0) == 0 && players.get(i).get(1) == 0) {
@@ -268,9 +269,6 @@ public class Server {
         //}
         //int[] inputs = parseResponse(data);
         int[] inputs = new int[players.size()];
-        System.out.println(data_array.length);
-        System.out.println(inputs.length);
-        //System.out.println(data);
         for (int i = 0; i < players.size(); i++) {
             inputs[i] = data_array[i];
         }
