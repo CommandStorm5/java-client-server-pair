@@ -9,8 +9,10 @@ public class Server {
     public static Clock clock = Clock.systemDefaultZone();
     public static long then = clock.millis();
     //I could make this better but I'd need to rewrite half the program
-    public static List<List<Integer>> players = new ArrayList<List<Integer>>(); //x,y,proj_d,proj_x,proj_y,last_d
-    public static int player_vars = 6;
+    public static List<List<Integer>> players = new ArrayList<List<Integer>>(); //x,y,last_dx,last_dy,timeout
+    public static List<List<Integer>> bullets = new ArrayList<List<Integer>>(); //x,y,dx,dy
+    public static int player_vars = 5;
+    public static int bullet_vars = 4;
     //Hardcoded level size
     public static int size_x = 40;
     public static int size_y = 40;
@@ -103,6 +105,7 @@ public class Server {
                                 TimeUnit.MILLISECONDS.sleep(100);
                             } catch (Exception e) {
                                 System.err.println("Failed to wait 100ms lmao");
+                                System.err.println(e);
                             }
                         }
                     }
@@ -114,6 +117,7 @@ public class Server {
                         TimeUnit.MILLISECONDS.sleep(100);
                     } catch (Exception e) {
                         System.err.println("Failed to wait 100ms lmao");
+                        System.err.println(e);
                     }
                 }
                 //Recieve packets from clients
@@ -137,16 +141,7 @@ public class Server {
                     render = gameTick(responses);
 
                     //Send packet to all clients
-                    for (int i = 0; i < players.size(); i++) {
-                        //System.out.println("Writing: " + i);
-                        try {
-                            dout.get(i).writeUTF(render);
-                            dout.get(i).flush();
-                        } catch (Exception e){
-                            System.err.println("Write: " + e);
-                            gracefulDisconnect(i);
-                        }
-                    }
+                    sendPacket(render);
                 }
                 //Request console command handler
                 if (console_command.isDone()) {
@@ -171,6 +166,19 @@ public class Server {
         //Shutdown
         for (int i = players.size()-1; i >= 0; i--) {
             gracefulDisconnect(i);
+        }
+    }
+
+    public static void sendPacket(String data) {
+        for (int i = 0; i < players.size(); i++) {
+            //System.out.println("Writing: " + i);
+            try {
+                dout.get(i).writeUTF(data);
+                dout.get(i).flush();
+            } catch (Exception e){
+                System.err.println("Write: " + e);
+                gracefulDisconnect(i);
+            }
         }
     }
 
@@ -204,6 +212,12 @@ public class Server {
             for (int i = 0; i < players.size(); i++) {
                 players.get(i).set(0, 1);
                 players.get(i).set(1, 1);
+            }
+        }
+        if (data.equals("spawn")) {
+            //Set all players to coordinate [1,1]
+            for (int i = 0; i < players.size(); i++) {
+                spawn(i);
             }
         }
         if (data.equals("respawn")) {
@@ -310,15 +324,16 @@ public class Server {
                 }
             }
         }
-        //Draw objects
+        //Draw players
         for (int i = players.size()-1; i >= 0; i--) {
-            //Draw players
             display[players.get(i).get(0)][players.get(i).get(1)] = (char)(i + 48);
-            //Draw bullets
-            if (players.get(i).get(2) == 1 || players.get(i).get(2) == 3) {
-                display[players.get(i).get(3)][players.get(i).get(4)] = 'v';
-            } else if (players.get(i).get(2) == 2 || players.get(i).get(2) == 4) {
-                display[players.get(i).get(3)][players.get(i).get(4)] = 'h';
+        }
+        //Draw bullets
+        for (int i = bullets.size()-1; i >= 0; i--) {
+            if (bullets.get(i).get(2) != 0) {
+                display[bullets.get(i).get(0)][bullets.get(i).get(1)] = 'v';
+            } else if (bullets.get(i).get(3) != 0) {
+                display[bullets.get(i).get(0)][bullets.get(i).get(1)] = 'h';
             }
         }
         //Stringify output

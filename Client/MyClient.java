@@ -3,7 +3,11 @@ import java.awt.Container;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
+import java.awt.FlowLayout;
+import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import java.io.*;
@@ -14,8 +18,6 @@ public class MyClient {
     public static byte player_movement = 0;
     public static void main() {
         //yoinked Key listener code
-        JFrame frame = new JFrame("Key Listener");
-        Container contentPane = frame.getContentPane();
         KeyListener listener = new KeyListener() {
             @Override
             public void keyPressed(KeyEvent event) {
@@ -50,19 +52,27 @@ public class MyClient {
             }
         };
         //Create keylogger
+        JFrame frame = new JFrame("Key Listener");
+        JPanel panel = new JPanel();
+        panel.setLayout(new FlowLayout());
+        Container contentPane = frame.getContentPane();
+        JLabel label = new JLabel("<html>Connecting...</html>");
+        panel.add(label);
+        frame.add(panel);
+        frame.setLocationRelativeTo(null);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         JTextField textField = new JTextField();
         textField.addKeyListener(listener);
         contentPane.add(textField, BorderLayout.NORTH);
         frame.pack();
+        frame.setSize(800,800);
         frame.setVisible(true);
-
         try {
             //Handshake
             Socket handshake_s = new Socket("192.168.106.74",420);
             DataInputStream handshake_din = new DataInputStream(handshake_s.getInputStream());
             //Recieve socket port from server
             int portNumber = handshake_din.readInt();
-            System.out.println(portNumber);
             //Connect to socket
             Socket s = new Socket("192.168.106.74",portNumber);
             DataInputStream din=new DataInputStream(s.getInputStream());
@@ -82,47 +92,58 @@ public class MyClient {
                 //System.out.println("Packet Sent");
                 response = din.readUTF();
                 if (!response.equals("0")) {
-                    Render(response);
+                    Render(response, frame, panel, label);
                 }
             }
             //Graceful shutdown
             dout.close();
             s.close();
-            System.out.println('\u000C');
             if (response.equals("0")) {
-                System.out.println("Server closed");
+                label.setText("<html><pre>Server closed</pre></html>");
+                panel.invalidate();
+                panel.validate();
             } else {
-                System.out.println("Disconnected");
+                label.setText("<html><pre>Disconnected</pre></html>");
+                panel.invalidate();
+                panel.validate();
             }
         } catch (Exception e){
-            System.err.println(e);
+            label.setText("<html><pre>Disconnected\n\nError code: " + e + "</pre></html>");
+            panel.invalidate();
+            panel.validate();
         }
     }
-    public static void Render(String input) {
-        //Clear screen
-        System.out.println('\u000C');
+    public static void Render(String input, JFrame frame, JPanel panel, JLabel label) {
         //Hardcoded level size
         int size_x = 40;
         int size_y = 40;
         char[][] data = new char[size_x][size_y];
         //Render world
+        String render = "";
         for (int x = 0; x < size_x; x++) {
             for (int y = 0; y < size_y; y++) {
                 data[x][y] = input.charAt(x * size_x + y);
                 if (data[x][y] == 'e') {
-                    System.out.print("  ");
+                    render += "  ";
                 } else if (data[x][y] == 'w') {
-                    System.out.print("WW");
+                    render += "WW";
                 } else if (data[x][y] == 'v') {
-                    System.out.print("||");
+                    render += "||";
                 } else if (data[x][y] == 'h') {
-                    System.out.print("==");
+                    render += "==";
                 } else {
-                    System.out.print("P" + data[x][y]);
+                    render += ("P" + data[x][y]);
                 }
             }
-            System.out.println("");
+            render += "<br>";
         }
+        label.setText("<html><pre>" + render + "</pre></html>");
+        //panel.remove(label);
+        //panel.add(label);
+        panel.invalidate();
+        panel.validate();
+        //frame.invalidate();
+        //frame.validate();
     }
 
 }
