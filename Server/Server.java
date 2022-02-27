@@ -91,18 +91,25 @@ public class Server {
                         }
                     }
                 }
+                //Server freeze in case no clients are connected
+                if (players.size() == 0) System.out.println("Waiting for client");
                 while (players.size() == 0) {
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(100);
+                    } catch (Exception e) {
+                        System.err.println("Failed to wait 100ms lmao");
+                    }
                 }
                 byte[] responses = new byte[players.size()];
                 for (int i = 0; i < players.size(); i++) {
                     try {
                         responses[i]=(byte)din.get(i).read();
                         if ((responses[i] & (byte)0b00000001) == 1) {
-                            disconnect(i);
+                            gracefulDisconnect(i);
                         }
                     } catch (Exception e){
                         System.err.println("Read: " + e);
-                        disconnect(i);
+                        gracefulDisconnect(i);
                     }
 
                 }
@@ -117,6 +124,7 @@ public class Server {
                             dout.get(i).flush();
                         } catch (Exception e){
                             System.err.println("Write: " + e);
+                            gracefulDisconnect(i);
                         }
                     }
                 }
@@ -138,11 +146,13 @@ public class Server {
                 System.err.println(e);
             }
         }
-        for (int i = 0; i < players.size(); i++) {
+        //Shutdown
+        for (int i = players.size()-1; i >= 0; i--) {
             gracefulDisconnect(i);
         }
     }
-    public static void gracefulDisconnect(int n) {
+
+    public static void gracefulDisconnect(int n) { //Politely ask client to remove itself
         try {
             dout.get(n).writeUTF("0");
             dout.get(n).flush();
@@ -154,6 +164,7 @@ public class Server {
         } catch (Exception e) {
             System.err.println("gracefulDisconnect: " + e);
         }
+        disconnect(n);
     }
     public static void disconnect(int n) {
         players.remove(n);
