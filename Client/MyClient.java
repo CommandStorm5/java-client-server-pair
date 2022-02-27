@@ -62,19 +62,21 @@ public class MyClient {
             BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
             byte request = 0;
             String response = "";
-            while(!response.equals(1)){
+            while(!response.equals(0)){
                 request = player_movement;
                 player_movement = 0;
                 dout.write(request);
                 dout.flush();
 
                 response = din.readUTF();
-                if (!response.equals(1)) {
+                if (!response.equals(0)) {
                     Render(response);
                 }
             }
             dout.close();
             s.close();
+            System.out.println('\u000C');
+            System.out.println("Server closed");
         } catch (Exception e){
             System.err.println(e);
         }
