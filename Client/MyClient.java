@@ -54,7 +54,6 @@ public class MyClient {
         frame.pack();
         frame.setVisible(true);
 
-        Scanner stdin = new Scanner(System.in);
         try {
             Socket handshake_s = new Socket("192.168.106.74",420);
             DataInputStream handshake_din = new DataInputStream(handshake_s.getInputStream());

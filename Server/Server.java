@@ -19,31 +19,8 @@ public class Server {
     public static List<DataOutputStream> dout = new ArrayList<DataOutputStream>();
     public static BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
     public static List<Integer> ports = new ArrayList<Integer>();
-    //public static String console_data = "";
+
     public static void main() {
-        //for (int i = 0; i < 6; i++) {
-        //    players.add(new ArrayList<Integer>());
-        //}
-
-        // for (int i = 0; i < players.get(0).size(); i++) {
-            // players.get(i).set(0, 1);
-            // players.get(i).set(0, 1);
-        // }
-        //System.out.println("Starting Server");
-
-
-        // for (int i = 0; i < players.get(0).size(); i++) {
-            // try {
-                // ss.get(i) = generateServerSocket(440+i);
-                // s.get(i) = establishConnection(ss[i]);
-                // din.get(i) = new DataInputStream(s[i].getInputStream());
-                // dout.set(i, new DataOutputStream(s.get(i).getOutputStream()));
-            // } catch (Exception e){
-                    // System.err.println(e);
-            // }
-        // }
-        // FIX THIS
-
         String render="";
         int await = 1;
         String console_data = "";
@@ -263,11 +240,6 @@ public class Server {
     }
     public static String gameTick(byte[] data_array) {
         char[][] display = new char[size_x][size_y];
-        //String data = "";
-        //for (int i = 0; i < players.get(0).size(); i++) {
-        //    data = data_array[i] + " ";
-        //}
-        //int[] inputs = parseResponse(data);
         int[] inputs = new int[players.size()];
         for (int i = 0; i < players.size(); i++) {
             inputs[i] = data_array[i];
