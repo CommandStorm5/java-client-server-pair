@@ -68,21 +68,26 @@ public class MyClient {
             handshake_s.close();
             byte request = 0;
             String response = "";
-            while(!response.equals(0)){
+            while(!response.equals("0")){
                 request = player_movement;
                 player_movement = 0;
                 dout.write(request);
                 dout.flush();
-                System.out.println("Packet Sent");
+                //System.out.println("Packet Sent");
                 response = din.readUTF();
-                if (!response.equals(0)) {
+                if (!response.equals("0")) {
                     Render(response);
                 }
             }
+            //Graceful shutdown
             dout.close();
             s.close();
             System.out.println('\u000C');
-            System.out.println("Server closed");
+            if (response.equals("0")) {
+                System.out.println("Server closed");
+            } else {
+                System.out.println("Disconnected");
+            }
         } catch (Exception e){
             System.err.println(e);
         }
