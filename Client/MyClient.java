@@ -11,8 +11,7 @@ import java.net.*;
 import java.util.*;
 import java.awt.event.KeyEvent;
 public class MyClient {
-    public static int player_x = 0;
-    public static int player_y = 0;
+    public static byte player_movement = 0;
     public static void main() {
         //yoinked Key listener code
         JFrame frame = new JFrame("Key Listener");
@@ -33,17 +32,18 @@ public class MyClient {
             private void printEventInfo(String str, KeyEvent e) {
                 int code = e.getKeyCode();
                 String key = KeyEvent.getKeyText(code);
-                if (key == "Right" && player_y < 9) {
-                    player_y += 1;
-                } else if (key == "Left" && player_y > 0) {
-                    player_y -= 1;
-                } else if (key == "Down" && player_x < 9) {
-                    player_x += 1;
-                } else if (key == "Up" && player_x > 0) {
-                    player_x -= 1;
+                if (key == "Up" || key == "w") {
+                    player_movement |= 0b10000000;
+                } else if (key == "Down" || key == "s") {
+                    player_movement |= 0b01000000;
+                } else if (key == "Left" || key == "a") {
+                    player_movement |= 0b00100000;
+                } else if (key == "Right" || key == "d") {
+                    player_movement |= 0b00010000;
+                } else if (key == "Space") {
+                    player_movement |= 0b00001000;
                 } else if (key == "Escape") {
-                    player_x = 100;
-                    player_y = 100;
+                    player_movement |= 0b00000001;
                 }
                 
             }
@@ -55,18 +55,21 @@ public class MyClient {
         frame.setVisible(true);
         
         Scanner stdin = new Scanner(System.in);
-        try {      
-            Socket s = new Socket("localhost",505);
-            DataInputStream din=new DataInputStream(s.getInputStream());  
-            DataOutputStream dout=new DataOutputStream(s.getOutputStream());  
+            DataInputStream din=new DataInputStream(s.getInputStream());
+            DataOutputStream dout=new DataOutputStream(s.getOutputStream());
+        try {
+            Socket s = new Socket("localhost",440);
             BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
-            String request = "", response = "";
-            while(!response.equals("stop")){
-                request = player_x + " " + player_y;
-                dout.writeUTF(request);
+            byte request = 0;
+            String response = "";
+            while(!response.equals(1)){
+                request = player_movement;
+                player_movement = 0;
+                dout.write(request);
                 dout.flush();
+
                 response = din.readUTF();
-                if (!response.equals("stop")) {
+                if (!response.equals(1)) {
                     Render(response);
                 }
             }
