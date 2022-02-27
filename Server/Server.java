@@ -48,16 +48,60 @@ public class Server {
         int await = 1;
         String console_data = "";
         while (!console_data.equals("stop")) {
-            CompletableFuture<String> future = CompletableFuture.supplyAsync(new Supplier<String>() {
+            CompletableFuture<String> console_command = CompletableFuture.supplyAsync(new Supplier<String>() {
                 @Override
                 public String get() {
                     Scanner s = new Scanner(System.in);
                     return s.nextLine();
                 }
             });
+
             await = 1;
             while (await == 1) {
-                for (int i = 0; i < players.length; i++) {
+                if (await_client == 0) {
+                    await_client = 1;
+                    CompletableFuture<Integer> await_new_client = CompletableFuture.supplyAsync(new Supplier<Integer>() {
+                        @Override
+                        public Integer get() {
+                            try {
+                                ServerSocket handshake_ss = generateServerSocket(420);
+                                Socket handshake_s = establishConnection(handshake_ss);
+                                System.out.println("Handshake");
+                                DataOutputStream handshake_dout = new DataOutputStream(handshake_s.getOutputStream());
+                                int portNumber = 421;
+                                while (true) {
+                                    System.out.println(portNumber);
+                                    if (!ports.contains(portNumber)) {
+                                        break;
+                                    }
+                                    portNumber++;
+                                }
+                                ports.add(portNumber);
+                                handshake_dout.writeInt(portNumber);
+                                handshake_dout.flush();
+                                handshake_dout.close();
+                                handshake_s.close();
+                                handshake_ss.close();
+                                System.out.println("closed");
+                                ss.add(generateServerSocket(portNumber));
+                                s.add(establishConnection(ss.get(ss.size()-1)));
+                                din.add(new DataInputStream(s.get(s.size()-1).getInputStream()));
+                                dout.add(new DataOutputStream(s.get(s.size()-1).getOutputStream()));
+                                players.add(new ArrayList<Integer>());
+                                for (int j = 0; j < player_vars; j++) {
+                                    players.get(players.size() - 1).add(0);
+                                }
+                                players.get(players.size() - 1).set(0, 1);
+                                players.get(players.size() - 1).set(1, 1);
+                                await_client = 0;
+                                return 1;
+                            } catch (Exception e){
+                                System.err.println("Thread: " + e);
+                                await_client = 0;
+                                return 0;
+                            }
+                        }
+                    });
                     if (s.size() == 0) {
                         System.out.println("Waiting for initial");
                         while (!await_new_client.isDone()) {

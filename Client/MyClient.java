@@ -2,11 +2,11 @@ import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
- 
+
 import javax.swing.JFrame;
 import javax.swing.JTextField;
 
-import java.io.*;  
+import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.awt.event.KeyEvent;
@@ -45,7 +45,7 @@ public class MyClient {
                 } else if (key == "Escape") {
                     player_movement |= 0b00000001;
                 }
-                
+
             }
         };
         JTextField textField = new JTextField();
@@ -53,13 +53,19 @@ public class MyClient {
         contentPane.add(textField, BorderLayout.NORTH);
         frame.pack();
         frame.setVisible(true);
-        
+
         Scanner stdin = new Scanner(System.in);
         try {
-            Socket s = new Socket("192.168.106.74",440);
+            Socket handshake_s = new Socket("192.168.106.74",420);
+            DataInputStream handshake_din = new DataInputStream(handshake_s.getInputStream());
+            int portNumber = handshake_din.readInt();
+            System.out.println(portNumber);
+            Socket s = new Socket("192.168.106.74",portNumber);
             DataInputStream din=new DataInputStream(s.getInputStream());
             DataOutputStream dout=new DataOutputStream(s.getOutputStream());
             BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
+            handshake_din.close();
+            handshake_s.close();
             byte request = 0;
             String response = "";
             while(!response.equals(0)){
@@ -67,7 +73,7 @@ public class MyClient {
                 player_movement = 0;
                 dout.write(request);
                 dout.flush();
-
+                System.out.println("Packet Sent");
                 response = din.readUTF();
                 if (!response.equals(0)) {
                     Render(response);
