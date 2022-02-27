@@ -76,13 +76,77 @@ public class Server {
             System.err.println(e);
             return null;
         }
-    }  
-    public static String Game(int[] coords) {
-        int size_x = 10;
-        int size_y = 10;
-        int[][] display = new int[size_x][size_y];
-        for (int i = 0; i < coords.length; i+=2) {
-            display[coords[i]][coords[i+1]] = 2;
+    }
+    public static Socket establishConnection(ServerSocket ss) {
+        try {
+            Socket s = ss.accept();
+            return s;
+        } catch (Exception e){
+            System.err.println(e);
+            return null;
+        }
+    }
+    public static char[][] generateWalls() {
+        char[][] walls = new char[size_x][size_y];
+        for (int x = 0; x < size_x; x++) {
+            for (int y = 0; y < size_y; y++) {
+                if (x == 0 || x == size_x-1) { //gen bounds
+                    walls[x][y] = 'w';
+                }
+                if (y == 0 || y == size_y-1) {
+                    walls[x][y] = 'w';
+                }
+                if (y == 3 && x > 3 && x < size_x-4) {
+                    walls[x][y] = 'w';
+                }
+                if (y == size_y-4 && x > 3 && x < size_x-4) {
+                    walls[x][y] = 'w';
+                }
+                if (x == 8 && y > 8 && y < size_y-9) {
+                    walls[x][y] = 'w';
+                }
+                if (x == size_x-9 && y > 8 && y < size_y-9) {
+                    walls[x][y] = 'w';
+                }
+                if (y == 13 && x > 13 && x < size_x-14) {
+                    walls[x][y] = 'w';
+                }
+                if (y == size_y-14 && x > 13 && x < size_x-14) {
+                    walls[x][y] = 'w';
+                }
+            }
+        }
+        return walls;
+    }
+    public static String gameTick(byte[] data_array) {
+        char[][] display = new char[size_x][size_y];
+        //String data = "";
+        //for (int i = 0; i < players.length; i++) {
+        //    data = data_array[i] + " ";
+        //}
+        //int[] inputs = parseResponse(data);
+        int[] inputs = new int[players.length];
+        //System.out.println(data);
+        for (int i = 0; i < players.length; i++) {
+            inputs[i] = data_array[i];
+        }
+        runMovement(inputs);
+        for (int x = 0; x < size_x; x++) {
+            for (int y = 0; y < size_y; y++) {
+                if (walls[x][y] == 'w') {
+                    display[x][y] = 'w';
+                } else {
+                    display[x][y] = 'e';
+                }
+            }
+        }
+        for (int i = players.length-1; i >= 0; i--) {
+            display[players[i][0]][players[i][1]] = (char)(i + 48);
+            if (players[i][2] == 1 || players[i][2] == 3) {
+                display[players[i][3]][players[i][4]] = 'v';
+            } else if (players[i][2] == 2 || players[i][2] == 4) {
+                display[players[i][3]][players[i][4]] = 'h';
+            }
         }
         String output = "";
         for (int x = 0; x < size_x; x++) {
