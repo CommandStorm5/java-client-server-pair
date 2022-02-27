@@ -13,6 +13,7 @@ import javax.swing.JTextField;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.awt.event.KeyEvent;
 public class MyClient {
     public static byte player_movement = 0;
@@ -101,13 +102,13 @@ public class MyClient {
                 //System.out.println("Packet Sent");
                 response = din.readUTF();
                 if (!response.equals("0")) {
-                    Render(response, frame, panel, label);
+                    Render(size_x, size_y, walls, response, frame, panel, label);
                 }
             }
             //Graceful shutdown
             dout.close();
             s.close();
-            if (response.equals("0")) {
+            if ((request & 0b00000001) == 0 && response.equals("0")) {
                 label.setText("<html><pre>Server closed</pre></html>");
                 panel.invalidate();
                 panel.validate();
@@ -117,31 +118,37 @@ public class MyClient {
                 panel.validate();
             }
         } catch (Exception e){
+            //System.err.println(Arrays.toString(e.getStackTrace()));
             label.setText("<html><pre>Disconnected\n\nError code: " + e + "</pre></html>");
             panel.invalidate();
             panel.validate();
         }
     }
-    public static void Render(String input, JFrame frame, JPanel panel, JLabel label) {
-        //Hardcoded level size
-        int size_x = 40;
-        int size_y = 40;
+    public static void Render(int size_x, int size_y, char[][] walls, String input, JFrame frame, JPanel panel, JLabel label) {
         char[][] data = new char[size_x][size_y];
+        //Draw objects
+        String[] objects = input.split("-", 0);
+        for (int i = 0; i < objects.length; i++) {
+            String[] params = objects[i].split(",", 0);
+            if (params[0].equals("P") || params[0].equals("B")) {
+                data[Integer.valueOf(params[1])][Integer.valueOf(params[2])] = params[3].charAt(0);
+            }
+        }
+
         //Render world
         String render = "";
         for (int x = 0; x < size_x; x++) {
             for (int y = 0; y < size_y; y++) {
-                data[x][y] = input.charAt(x * size_x + y);
-                if (data[x][y] == 'e') {
-                    render += "  ";
-                } else if (data[x][y] == 'w') {
+                if (walls[x][y] == 'w') {
                     render += "WW";
                 } else if (data[x][y] == 'v') {
                     render += "||";
                 } else if (data[x][y] == 'h') {
                     render += "==";
+                } else if (data[x][y] != 0) {
+                    render += ("P" + (char)(data[x][y]));
                 } else {
-                    render += ("P" + data[x][y]);
+                    render += "  ";
                 }
             }
             render += "<br>";

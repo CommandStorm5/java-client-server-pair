@@ -8,14 +8,13 @@ public class Server {
     //Public variables :D
     public static Clock clock = Clock.systemDefaultZone();
     public static long then = clock.millis();
-    //I could make this better but I'd need to rewrite half the program
     public static List<List<Integer>> players = new ArrayList<List<Integer>>(); //x,y,last_dx,last_dy,timeout
     public static List<List<Integer>> bullets = new ArrayList<List<Integer>>(); //x,y,dx,dy
     public static int player_vars = 5;
     public static int bullet_vars = 4;
     //Hardcoded level size
     public static int size_x = 40;
-    public static int size_y = 40;
+    public static int size_y = 60;
     public static char[][] walls = generateWalls();
     public static int await_client = 0;
     //Connection vars
@@ -233,8 +232,7 @@ public class Server {
             int i = s.nextInt();
             //Only run if player is actually dead [0,0]
             if (players.get(i).get(0) == 0 && players.get(i).get(1) == 0) {
-                players.get(i).set(0, 1);
-                players.get(i).set(1, 1);
+                spawn(i);
             }
         }
         if (data.equals("kill")) {
@@ -252,6 +250,7 @@ public class Server {
                 if (players.get(i).get(0) == 0 && players.get(i).get(1) == 0) {
                     players.get(i).set(0, 1);
                     players.get(i).set(1, 1);
+                    players.get(i).set(4, 100);
                 }
             }
         }
@@ -305,6 +304,9 @@ public class Server {
                 if (y == size_y-14 && x > 13 && x < size_x-14) { //Complement previous
                     walls[x][y] = 'w';
                 }
+                if (walls[x][y] != 'w') { //Complement previous
+                    walls[x][y] = 'e';
+                }
             }
         }
         return walls;
@@ -319,35 +321,15 @@ public class Server {
         }
 
         runMovement(inputs);
-
-        //Draw walls
-        for (int x = 0; x < size_x; x++) {
-            for (int y = 0; y < size_y; y++) {
-                if (walls[x][y] == 'w') {
-                    display[x][y] = 'w';
-                } else {
-                    display[x][y] = 'e';
-                }
-            }
-        }
-        //Draw players
-        for (int i = players.size()-1; i >= 0; i--) {
-            display[players.get(i).get(0)][players.get(i).get(1)] = (char)(i + 48);
-        }
-        //Draw bullets
-        for (int i = bullets.size()-1; i >= 0; i--) {
-            if (bullets.get(i).get(2) != 0) {
-                display[bullets.get(i).get(0)][bullets.get(i).get(1)] = 'v';
-            } else if (bullets.get(i).get(3) != 0) {
-                display[bullets.get(i).get(0)][bullets.get(i).get(1)] = 'h';
-            }
-        }
-        //Stringify output
+        //New Packet
+        //Players "-P,x,y,id"
         String output = "";
-        for (int x = 0; x < size_x; x++) {
-            for (int y = 0; y < size_y; y++) {
-                output += display[x][y];
-            }
+        for (int i = 0; i < players.size(); i++) {
+            output += "-P," + players.get(i).get(0) +","+ players.get(i).get(1) + "," + i;
+        }
+        //Bullets "-B,x,y,heading"
+        for (int i = 0; i < bullets.size(); i++) {
+            output += "-B,"+ bullets.get(i).get(0 ) +","+ bullets.get(i).get(1) +","+ (bullets.get(i).get(2)!=0?"v":"h");
         }
         return output;
     }
@@ -368,24 +350,24 @@ public class Server {
             if ((inputs[i] & 0b10000000) != 0) {
                 //Handle up
                 players.get(i).set(2, -1);
-                players.get(i).set(3,0);
+                players.get(i).set(3, 0);
                 dx = -1;
             }
             if ((inputs[i] & 0b01000000) != 0) {
                 //Handle down
                 players.get(i).set(2, 1);
-                players.get(i).set(3,0);
+                players.get(i).set(3, 0);
                 dx = 1;
             }
             if ((inputs[i] & 0b00100000) != 0) {
                 //Handle left
-                players.get(i).set(2,0);
+                players.get(i).set(2, 0);
                 players.get(i).set(3, -1);
                 dy = -1;
             }
             if ((inputs[i] & 0b00010000) != 0) {
                 //Handle right
-                players.get(i).set(2,0);
+                players.get(i).set(2, 0);
                 players.get(i).set(3, 1);
                 dy = 1;
             }
