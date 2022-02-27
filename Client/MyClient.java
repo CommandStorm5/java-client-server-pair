@@ -55,10 +55,10 @@ public class MyClient {
         frame.setVisible(true);
         
         Scanner stdin = new Scanner(System.in);
+        try {
+            Socket s = new Socket("192.168.106.74",440);
             DataInputStream din=new DataInputStream(s.getInputStream());
             DataOutputStream dout=new DataOutputStream(s.getOutputStream());
-        try {
-            Socket s = new Socket("localhost",440);
             BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
             byte request = 0;
             String response = "";
