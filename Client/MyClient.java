@@ -29,6 +29,7 @@ public class MyClient {
             public void keyTyped(KeyEvent event) {
                 //Still nothing lol
             }
+            //Keylogger
             private void printEventInfo(String str, KeyEvent e) {
                 int code = e.getKeyCode();
                 String key = KeyEvent.getKeyText(code);
@@ -48,6 +49,7 @@ public class MyClient {
 
             }
         };
+        //Create keylogger
         JTextField textField = new JTextField();
         textField.addKeyListener(listener);
         contentPane.add(textField, BorderLayout.NORTH);
@@ -55,16 +57,21 @@ public class MyClient {
         frame.setVisible(true);
 
         try {
+            //Handshake
             Socket handshake_s = new Socket("192.168.106.74",420);
             DataInputStream handshake_din = new DataInputStream(handshake_s.getInputStream());
+            //Recieve socket port from server
             int portNumber = handshake_din.readInt();
             System.out.println(portNumber);
+            //Connect to socket
             Socket s = new Socket("192.168.106.74",portNumber);
             DataInputStream din=new DataInputStream(s.getInputStream());
             DataOutputStream dout=new DataOutputStream(s.getOutputStream());
             BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
+            //Murder handshake
             handshake_din.close();
             handshake_s.close();
+            //Main loop
             byte request = 0;
             String response = "";
             while(!response.equals("0")){
@@ -92,10 +99,13 @@ public class MyClient {
         }
     }
     public static void Render(String input) {
+        //Clear screen
         System.out.println('\u000C');
+        //Hardcoded level size
         int size_x = 40;
         int size_y = 40;
         char[][] data = new char[size_x][size_y];
+        //Render world
         for (int x = 0; x < size_x; x++) {
             for (int y = 0; y < size_y; y++) {
                 data[x][y] = input.charAt(x * size_x + y);
