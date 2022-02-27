@@ -25,12 +25,21 @@ public class Server {
     public static List<DataInputStream> din = new ArrayList<DataInputStream>();
     public static List<DataOutputStream> dout = new ArrayList<DataOutputStream>();
     public static BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
-    public static List<Integer> ports = new ArrayList<Integer>();
 
     public static void main() {
         String render="";
         int await = 1;
         String console_data = "";
+        String walls_string = "";
+        for (int x = 0; x < size_x; x++) {
+            for (int y = 0; y < size_y; y++) {
+                walls_string += walls[x][y];
+            }
+        }
+
+        ss.add(generateServerSocket(420));
+        ss.add(generateServerSocket(421));
+
         // Exit on full shutdown
         while (!console_data.equals("stop")) {
             //Async console handler
@@ -48,59 +57,11 @@ public class Server {
                 //Create client handler when one is not running
                 if (await_client == 0) {
                     await_client = 1;
-                    CompletableFuture<Integer> await_new_client = CompletableFuture.supplyAsync(new Supplier<Integer>() {
-                        @Override
-                        public Integer get() {
-                            try {
-                                //Handshake
-                                ServerSocket handshake_ss = generateServerSocket(420);
-                                Socket handshake_s = establishConnection(handshake_ss);
-                                System.out.println("Connection: Handshake");
-                                DataOutputStream handshake_dout = new DataOutputStream(handshake_s.getOutputStream());
-                                //Find empty port
-                                int portNumber = 421;
-                                while (true) {
-                                    if (!ports.contains(portNumber)) {
-                                        break;
-                                    }
-                                    portNumber++;
-                                }
-                                System.out.println("Connection: Client ID " + ss.size());
-                                System.out.println("Connection: Port " + portNumber);
-                                ports.add(portNumber);
-                                handshake_dout.writeInt(portNumber);
-                                handshake_dout.flush();
-                                handshake_dout.close();
-                                handshake_s.close();
-                                handshake_ss.close();
-                                System.out.println("Connection: Handshake closed");
-                                //Socket connection
-                                //If something errors out here, all clients will desync
-                                ss.add(generateServerSocket(portNumber));
-                                s.add(establishConnection(ss.get(ss.size()-1)));
-                                din.add(new DataInputStream(s.get(s.size()-1).getInputStream()));
-                                dout.add(new DataOutputStream(s.get(s.size()-1).getOutputStream()));
-                                //Add new player entry
-                                players.add(new ArrayList<Integer>());
-                                for (int j = 0; j < player_vars; j++) {
-                                    players.get(players.size() - 1).add(0);
-                                }
-                                players.get(players.size() - 1).set(0, 1);
-                                players.get(players.size() - 1).set(1, 1);
-                                //Request new client handler creation
-                                await_client = 0;
-                                return 1;
-                            } catch (Exception e){
-                                System.err.println("Thread: " + e);
-                                await_client = 0;
-                                return 0;
-                            }
-                        }
-                    });
+                    CompletableFuture<Integer> client_handler = createClientHandler(walls_string);
                     //Await first client
                     if (s.size() == 0) {
                         System.out.println("Waiting for initial");
-                        while (!await_new_client.isDone()) {
+                        while (!client_handler.isDone()) {
                             try {
                                 TimeUnit.MILLISECONDS.sleep(100);
                             } catch (Exception e) {
@@ -169,6 +130,54 @@ public class Server {
         }
     }
 
+    public static CompletableFuture createClientHandler(String walls_string) {
+        CompletableFuture<Integer> client_handler = CompletableFuture.supplyAsync(new Supplier<Integer>() {
+            @Override
+            public Integer get() {
+                try {
+                    //Handshake
+                    Socket handshake_s = establishConnection(ss.get(0));
+                    System.out.println("Connection: Handshake");
+                    DataOutputStream handshake_dout = new DataOutputStream(handshake_s.getOutputStream());
+                    System.out.println("Connection: Client ID " + s.size());
+                    //System.out.println("Connection: Port " + portNumber);
+                    //ports.add(portNumber);
+
+
+
+                    //Run setup (size_x, size_y)
+                    handshake_dout.writeInt(size_x);
+                    handshake_dout.writeInt(size_y);
+                    handshake_dout.writeUTF(walls_string);
+                    handshake_dout.flush();
+                    handshake_dout.close();
+                    handshake_s.close();
+                    System.out.println("Connection: Handshake closed");
+                    //Socket connection
+                    //If something errors out here, all clients will desync
+                    s.add(establishConnection(ss.get(1)));
+                    din.add(new DataInputStream(s.get(s.size()-1).getInputStream()));
+                    dout.add(new DataOutputStream(s.get(s.size()-1).getOutputStream()));
+                    //Add new player entry
+                    players.add(new ArrayList<Integer>());
+                    for (int j = 0; j < player_vars; j++) {
+                        players.get(players.size() - 1).add(0);
+                    }
+                    players.get(players.size() - 1).set(0, 1);
+                    players.get(players.size() - 1).set(1, 1);
+                    //Request new client handler creation
+                    await_client = 0;
+                    return 1;
+                } catch (Exception e){
+                    System.err.println("Thread: " + e);
+                    await_client = 0;
+                    return 0;
+                }
+            }
+        });
+        return client_handler;
+    }
+
     public static void sendPacket(String data) {
         for (int i = 0; i < players.size(); i++) {
             //System.out.println("Writing: " + i);
@@ -189,7 +198,6 @@ public class Server {
             TimeUnit.MILLISECONDS.sleep(50);
             dout.get(n).close();
             s.get(n).close();
-            ss.get(n).close();
             System.out.println("Player " + n + " disconnected");
         } catch (Exception e) {
             System.err.println("gracefulDisconnect: " + e);
@@ -199,11 +207,9 @@ public class Server {
 
     public static void disconnect(int n) { //Yeetus deletus
         players.remove(n);
-        ports.remove(n);
         dout.remove(n);
         din.remove(n);
         s.remove(n);
-        ss.remove(n);
     }
 
     public static void console(String data) { //Handle console commands

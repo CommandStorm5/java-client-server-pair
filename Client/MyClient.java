@@ -71,10 +71,19 @@ public class MyClient {
             //Handshake
             Socket handshake_s = new Socket("192.168.106.74",420);
             DataInputStream handshake_din = new DataInputStream(handshake_s.getInputStream());
-            //Recieve socket port from server
-            int portNumber = handshake_din.readInt();
+            //Recieve initial config form server
+            int size_x = handshake_din.readInt();
+            int size_y = handshake_din.readInt();
+
+            char[][] walls = new char[size_x][size_y];
+            String walls_string = handshake_din.readUTF();
+            for (int x = 0; x < size_x; x++) {
+                for (int y = 0; y < size_y; y++) {
+                    walls[x][y] = walls_string.charAt(x*size_y + y);
+                }
+            }
             //Connect to socket
-            Socket s = new Socket("192.168.106.74",portNumber);
+            Socket s = new Socket("192.168.106.74",421);
             DataInputStream din=new DataInputStream(s.getInputStream());
             DataOutputStream dout=new DataOutputStream(s.getOutputStream());
             BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
