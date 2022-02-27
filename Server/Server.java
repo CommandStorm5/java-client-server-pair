@@ -357,56 +357,89 @@ public class Server {
 
     public static void runMovement(int[] inputs) { //Change player coords according to movement
         for (int i = 0; i < inputs.length; i++) {
-            if ((inputs[i] & 0b10000000) != 0 && players.get(i).get(0) > 0 && walls[players.get(i).get(0)-1][players.get(i).get(1)] != 'w') {
-                //Move up
-                players.get(i).set(0, players.get(i).get(0) - 1);
-                players.get(i).set(5, 1);
-            } else if ((inputs[i] & 0b01000000) != 0 && players.get(i).get(0) < size_x-1 && walls[players.get(i).get(0)+1][players.get(i).get(1)] != 'w') {
-                //Move down
-                players.get(i).set(0, players.get(i).get(0) + 1);
-                players.get(i).set(5, 3);
-            } else if ((inputs[i] & 0b00100000) != 0 && players.get(i).get(1) > 0 && walls[players.get(i).get(0)][players.get(i).get(1)-1] != 'w') {
-                //Move left
-                players.get(i).set(1, players.get(i).get(1) - 1);
-                players.get(i).set(5, 2);
-            } else if ((inputs[i] & 0b00010000) != 0 && players.get(i).get(1) < size_x-1 && walls[players.get(i).get(0)][players.get(i).get(1)+1] != 'w') {
-                //Move right
-                players.get(i).set(1, players.get(i).get(1) + 1);
-                players.get(i).set(5, 4);
+            int dx = 0;
+            int dy = 0;
+            if ((inputs[i] & 0b10000000) != 0) {
+                //Handle up
+                players.get(i).set(2, -1);
+                players.get(i).set(3,0);
+                dx = -1;
+            }
+            if ((inputs[i] & 0b01000000) != 0) {
+                //Handle down
+                players.get(i).set(2, 1);
+                players.get(i).set(3,0);
+                dx = 1;
+            }
+            if ((inputs[i] & 0b00100000) != 0) {
+                //Handle left
+                players.get(i).set(2,0);
+                players.get(i).set(3, -1);
+                dy = -1;
+            }
+            if ((inputs[i] & 0b00010000) != 0) {
+                //Handle right
+                players.get(i).set(2,0);
+                players.get(i).set(3, 1);
+                dy = 1;
+            }
+            //Move
+            if (players.get(i).get(0) > 0 && players.get(i).get(1) > 0) {
+                if (walls[players.get(i).get(0)+dx][players.get(i).get(1)+dy] != 'w') {
+                    players.get(i).set(0, players.get(i).get(0) + dx);
+                    players.get(i).set(1, players.get(i).get(1) + dy);
+                }
+            }
+            //Respawn
+            if (players.get(i).get(0) == 0 && players.get(i).get(1) == 0 && players.get(i).get(4) == 0) {
+                spawn(i);
             }
 
-            if ((inputs[i] & 0b00001000) != 0 && players.get(i).get(2) == 0) { //Spawn bullet
-                players.get(i).set(2, players.get(i).get(5));
-                players.get(i).set(3, players.get(i).get(0));
-                players.get(i).set(4, players.get(i).get(1));
-            }
-
-            if (walls[players.get(i).get(3)][players.get(i).get(4)] == 'w') { //Remove bullet that has hit a wall
-                players.get(i).set(2, 0);
+            if ((inputs[i] & 0b00001000) != 0 && players.get(i).get(4) == 0) { //Spawn bullet
+                bullets.add(new ArrayList<Integer>());
+                bullets.get(bullets.size()-1).add(players.get(i).get(0));
+                bullets.get(bullets.size()-1).add(players.get(i).get(1));
+                bullets.get(bullets.size()-1).add(players.get(i).get(2));
+                bullets.get(bullets.size()-1).add(players.get(i).get(3));
+                //Set shoot timeout
+                players.get(i).set(4,10);
             }
         }
-
         if (clock.millis() > then) {
             //Bullet timer
             then += 50;
-            for (int i = 0; i < players.size(); i++) { //Handle bullet movement
-                //This could be done with dx and dy
-                if (players.get(i).get(2) == 1) {
-                    players.get(i).set(3, players.get(i).get(3) - 1);
-                } else if (players.get(i).get(2) == 2) {
-                    players.get(i).set(4, players.get(i).get(4) - 1);
-                } else if (players.get(i).get(2) == 3) {
-                    players.get(i).set(3, players.get(i).get(3) + 1);
-                } else if (players.get(i).get(2) == 4) {
-                    players.get(i).set(4, players.get(i).get(4) + 1);
-                }
-                //Handle bullet hits
-                for (int j = 0; j < players.size(); j++) {
-                    if (i != j && players.get(i).get(3) == players.get(j).get(0) && players.get(i).get(4) == players.get(j).get(1)) {
-                        players.get(j).set(0, 0);
-                        players.get(j).set(1, 0);
+            for (int i = 0; i < bullets.size(); i++) { //Handle bullet movement
+                if (walls[bullets.get(i).get(0)][bullets.get(i).get(1)] == 'w') { //Remove bullet that has hit a wall
+                    bullets.remove(i);
+                } else {
+                    bullets.get(i).set(0, bullets.get(i).get(0) + bullets.get(i).get(2));
+                    bullets.get(i).set(1, bullets.get(i).get(1) + bullets.get(i).get(3));
+                    //Handle bullet hits
+                    for (int j = 0; j < players.size(); j++) {
+                        if (bullets.get(i).get(0) == players.get(j).get(0) && bullets.get(i).get(1) == players.get(j).get(1)) {
+                            players.get(j).set(0, 0);
+                            players.get(j).set(1, 0);
+                            players.get(j).set(4, 100);
+                        }
                     }
                 }
+            }
+            //Handle timeouts
+            for (int i = 0; i < players.size(); i++) {
+                if (players.get(i).get(4) > 0) players.get(i).set(4, players.get(i).get(4)-1);
+            }
+        }
+    }
+
+    public static void spawn(int i) {
+        boolean loop = true;
+        while (loop) {
+            int x = (int)(Math.random()*size_x);
+            int y = (int)(Math.random()*size_y);
+            if (walls[x][y] != 'w') {
+                players.get(i).set(0,x);
+                players.get(i).set(1,y);
+                loop = false;
             }
         }
     }
