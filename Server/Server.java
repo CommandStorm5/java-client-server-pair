@@ -2,7 +2,8 @@ import java.time.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.*;
+import java.util.function.*;
 public class Server {
     public static Clock clock = Clock.systemDefaultZone();
     public static long then = clock.millis();
@@ -10,7 +11,7 @@ public class Server {
     public static int size_x = 40;
     public static int size_y = 40;
     public static char[][] walls = generateWalls();
-    public static String console_data = "";
+    //public static String console_data = "";
     public static void main() {
         for (int i = 0; i < players.length; i++) {
             players[i][0] = 1;
@@ -35,36 +36,85 @@ public class Server {
         }
         byte[] responses = new byte[players.length];
         String render="";
-        while (console_data != "stop") {
-            for (int i = 0; i < players.length; i++) {
-                try {
-                    responses[i]=(byte)din[i].read();
-                    if ((responses[i] & (byte)0b00000001) == 1) {
-                        dout[i].close();
-                        s[i].close();
-                        ss[i].close();
+        int await = 1;
+        String console_data = "";
+        while (!console_data.equals("stop")) {
+            CompletableFuture<String> future = CompletableFuture.supplyAsync(new Supplier<String>() {
+                @Override
+                public String get() {
+                    Scanner s = new Scanner(System.in);
+                    return s.nextLine();
+                }
+            });
+            await = 1;
+            while (await == 1) {
+                for (int i = 0; i < players.length; i++) {
+                    try {
+                        responses[i]=(byte)din[i].read();
+                        if ((responses[i] & (byte)0b00000001) == 1) {
+                            dout[i].close();
+                            s[i].close();
+                            ss[i].close();
+                        }
+                    } catch (Exception e){
+                        System.err.println(e);
                     }
-                } catch (Exception e){
-                    System.err.println(e);
+                }
+                render = gameTick(responses);
+                for (int i = 0; i < players.length; i++) {
+                    try {
+                        dout[i].writeUTF(render);
+                        dout[i].flush();
+                    } catch (Exception e){
+                        System.err.println(e);
+                    }
+                }
+                if (future.isDone()) {
+                    await = 0;
                 }
             }
-            render = gameTick(responses);
-            for (int i = 0; i < players.length; i++) {
-                try {
-                    dout[i].writeUTF(render);
-                    dout[i].flush();
-                } catch (Exception e){
-                    System.err.println(e);
-                }
+            try {
+                console_data = future.get();
+                console_data = console_data.trim();
+                console(console_data);
+            } catch (Exception e){
+                System.err.println(e);
             }
         }
         for (int i = 0; i < players.length; i++) {
             try {
+                dout[i].writeUTF("0");
+                dout[i].flush();
+                TimeUnit.MILLISECONDS.sleep(100);
                 dout[i].close();
                 s[i].close();
                 ss[i].close();
             } catch (Exception e){
                 System.err.println(e);
+            }
+        }
+    }
+    public static void console(String data) {
+        if (data.equals("reset")) {
+            for (int i = 0; i < players.length; i++) {
+                players[i][0] = 1;
+                players[i][1] = 1;
+            }
+        }
+        if (data.equals("respawn")) {
+            Scanner s = new Scanner(System.in);
+            int i = s.nextInt();
+            if (players[i][0] == 0 && players[i][1] == 0) {
+                players[i][0] = 1;
+                players[i][1] = 1;
+            }
+        }
+        if (data.equals("respawn all")) {
+            for (int i = 0; i < players.length; i++) {
+                if (players[i][0] == 0 && players[i][1] == 0) {
+                    players[i][0] = 1;
+                    players[i][1] = 1;
+                }
             }
         }
     }
@@ -209,4 +259,4 @@ public class Server {
             }
         }
     }
-}  
+}
