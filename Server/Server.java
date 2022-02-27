@@ -1,32 +1,80 @@
-import java.io.*;  
+import java.time.*;
+import java.io.*;
 import java.net.*;
 import java.util.*;
-public class Server {  
-    public static void main() {  
-        try {  
-            ServerSocket ss=new ServerSocket(505);  
-            Socket s=ss.accept();//establishes connection   
-            DataInputStream din=new DataInputStream(s.getInputStream());  
-            DataOutputStream dout=new DataOutputStream(s.getOutputStream());  
-            BufferedReader br=new BufferedReader(new InputStreamReader(System.in));   
-            String response="",render="";
-            while(!response.equals("100 100")){  
-                response=din.readUTF();
-                if (!response.equals("100 100")) {
-                    int coords[] = ParseResponse(response);
-                    render = Game(coords);
-                    dout.writeUTF(render);  
-                    dout.flush();
-                } else {
-                    dout.writeUTF("stop");  
-                    dout.flush();
+import java.util.concurrent.CompletableFuture;
+public class Server {
+    public static Clock clock = Clock.systemDefaultZone();
+    public static long then = clock.millis();
+    public static int[][] players = new int[1][6]; //x,y,proj_d,proj_x,proj_y,last_d
+    public static int size_x = 40;
+    public static int size_y = 40;
+    public static char[][] walls = generateWalls();
+    public static String console_data = "";
+    public static void main() {
+        for (int i = 0; i < players.length; i++) {
+            players[i][0] = 1;
+            players[i][1] = 1;
+        }
+        //System.out.println("Starting Server");
+        ServerSocket[] ss = new ServerSocket[players.length];
+        Socket[] s = new Socket[players.length];
+        DataInputStream[] din = new DataInputStream[players.length];
+        DataOutputStream[] dout=new DataOutputStream[players.length];
+        BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
+
+        for (int i = 0; i < players.length; i++) {
+            try {
+                ss[i] = generateServerSocket(440+i);
+                s[i] = establishConnection(ss[i]);
+                din[i] = new DataInputStream(s[i].getInputStream());
+                dout[i] = new DataOutputStream(s[i].getOutputStream());
+            } catch (Exception e){
+                    System.err.println(e);
+            }
+        }
+        byte[] responses = new byte[players.length];
+        String render="";
+        while (console_data != "stop") {
+            for (int i = 0; i < players.length; i++) {
+                try {
+                    responses[i]=(byte)din[i].read();
+                    if ((responses[i] & (byte)0b00000001) == 1) {
+                        dout[i].close();
+                        s[i].close();
+                        ss[i].close();
+                    }
+                } catch (Exception e){
+                    System.err.println(e);
                 }
             }
-            din.close();  
-            s.close();  
-            ss.close();
+            render = gameTick(responses);
+            for (int i = 0; i < players.length; i++) {
+                try {
+                    dout[i].writeUTF(render);
+                    dout[i].flush();
+                } catch (Exception e){
+                    System.err.println(e);
+                }
+            }
+        }
+        for (int i = 0; i < players.length; i++) {
+            try {
+                dout[i].close();
+                s[i].close();
+                ss[i].close();
+            } catch (Exception e){
+                System.err.println(e);
+            }
+        }
+    }
+    public static ServerSocket generateServerSocket(int port) {
+        try {
+            ServerSocket ss=new ServerSocket(port);
+            return ss;
         } catch (Exception e){
             System.err.println(e);
+            return null;
         }
     }  
     public static String Game(int[] coords) {
