@@ -75,21 +75,25 @@ public class MyClient {
         } catch (Exception e){
             System.err.println(e);
         }
-    } 
+    }
     public static void Render(String input) {
         System.out.println('\u000C');
-        int size_x = 10;
-        int size_y = 10;
+        int size_x = 40;
+        int size_y = 40;
         char[][] data = new char[size_x][size_y];
         for (int x = 0; x < size_x; x++) {
             for (int y = 0; y < size_y; y++) {
                 data[x][y] = input.charAt(x * size_x + y);
-                if (data[x][y] == '2') {
-                    System.out.print("PP");
-                } else if (data[x][y] == '1') {
-                    System.out.print("FF");
+                if (data[x][y] == 'e') {
+                    System.out.print("  ");
+                } else if (data[x][y] == 'w') {
+                    System.out.print("WW");
+                } else if (data[x][y] == 'v') {
+                    System.out.print("||");
+                } else if (data[x][y] == 'h') {
+                    System.out.print("==");
                 } else {
-                    System.out.print("..");
+                    System.out.print("P" + data[x][y]);
                 }
             }
             System.out.println("");
