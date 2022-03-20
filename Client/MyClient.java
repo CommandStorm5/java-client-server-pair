@@ -17,7 +17,7 @@ import java.util.concurrent.*;
 import java.awt.event.KeyEvent;
 public class MyClient {
     public static byte player_movement = 0;
-    public static void main() {
+    public static void main(String[] args) {
         //yoinked Key listener code
         KeyListener listener = new KeyListener() {
             @Override

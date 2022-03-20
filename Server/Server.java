@@ -25,7 +25,7 @@ public class Server {
     public static List<DataOutputStream> dout = new ArrayList<DataOutputStream>();
     public static BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
 
-    public static void main() {
+    public static void main(String[] args) {
         String render="";
         int await = 1;
         String console_data = "";
