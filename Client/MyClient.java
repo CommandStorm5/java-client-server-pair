@@ -1,9 +1,6 @@
-import java.awt.BorderLayout;
-import java.awt.Container;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
+import java.awt.*;
+import java.awt.event.*;
 
-import java.awt.FlowLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -59,7 +56,8 @@ public class MyClient {
         Container contentPane = frame.getContentPane();
         JLabel label = new JLabel("<html>Connecting...</html>");
         panel.add(label);
-        frame.add(panel);
+        Draw draw = new Draw(0,0);
+        frame.add(draw);
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         JTextField textField = new JTextField();
@@ -76,8 +74,11 @@ public class MyClient {
             //Recieve initial config form server
             int size_x = handshake_din.readInt();
             int size_y = handshake_din.readInt();
+            draw.setX(size_x);
+            draw.setY(size_y);
 
             char[][] walls = new char[size_x][size_y];
+            draw.setWalls(walls);
             String walls_string = handshake_din.readUTF();
             for (int x = 0; x < size_x; x++) {
                 for (int y = 0; y < size_y; y++) {
@@ -103,7 +104,7 @@ public class MyClient {
                 //System.out.println("Packet Sent");
                 response = din.readUTF();
                 if (!response.equals("0")) {
-                    Render(size_x, size_y, walls, response, frame, panel, label);
+                    Render(size_x, size_y, walls, response, panel, frame, draw);
                 }
             }
             //Graceful shutdown
@@ -125,9 +126,9 @@ public class MyClient {
             panel.validate();
         }
     }
-    public static void Render(int size_x, int size_y, char[][] walls, String input, JFrame frame, JPanel panel, JLabel label) {
+    public static void Render(int size_x, int size_y, char[][] walls, String input, JPanel panel, JFrame frame, Draw draw) {
         char[][] data = new char[size_x][size_y];
-        //Draw objects
+        //Parse objects
         String[] objects = input.split("-", 0);
         for (int i = 0; i < objects.length; i++) {
             String[] params = objects[i].split(",", 0);
@@ -136,31 +137,58 @@ public class MyClient {
             }
         }
 
-        //Render world
-        String render = "";
-        for (int x = 0; x < size_x; x++) {
-            for (int y = 0; y < size_y; y++) {
-                if (walls[x][y] == 'w') {
-                    render += "WW";
-                } else if (data[x][y] == 'v') {
-                    render += "||";
-                } else if (data[x][y] == 'h') {
-                    render += "==";
-                } else if (data[x][y] != 0) {
-                    render += ("P" + (char)(data[x][y]));
-                } else {
-                    render += "  ";
-                }
-            }
-            render += "<br>";
-        }
-        label.setText("<html><pre>" + render + "</pre></html>");
-        //panel.remove(label);
-        //panel.add(label);
-        panel.invalidate();
-        panel.validate();
-        //frame.invalidate();
-        //frame.validate();
+        draw.setData(data);
+        draw.repaint();
     }
 
+}
+
+class Draw extends JPanel {
+    int size_q = 20;
+    int size_r = 10;
+    int size_x, size_y;
+    char[][] data;
+    char[][] walls;
+    //data inputs
+    public Draw(int size_x, int size_y) {
+        this.size_x = size_x;
+        this.size_y = size_y;
+    }
+    void setX(int size_x) {this.size_x = size_x;}
+    void setY(int size_y) {this.size_y = size_y;}
+    void setData(char[][] data) {this.data = data;}
+    void setWalls(char[][] walls) {this.walls = walls;}
+
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        if (data != null) {
+            //draw all the things
+            for (int x = 0; x < size_x; x++) {
+                for (int y = 0; y < size_y; y++) {
+                    if (walls[x][y] == 'w') {
+                        g.setColor(Color.BLACK);
+                        g.fillRect(y*size_q, x*size_q, size_q, size_q);
+                    } else if (data[x][y] == 'v') {
+                        g.setColor(Color.GRAY);
+                        g.fillOval((y*size_q)  + (size_r/2), x*size_q, size_r, size_q);
+                    } else if (data[x][y] == 'h') {
+                        g.setColor(Color.GRAY);
+                        g.fillOval(y*size_q, (x*size_q)  + (size_r/2), size_q, size_r);
+                    } else if (data[x][y] != 0) {
+                        g.setColor(Color.RED);
+                        g.fillOval(y*size_q, x*size_q, size_q, size_q);
+                    } else {
+                        g.setColor(Color.WHITE);
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+        return new Dimension(800, 800);
+    }
 }
