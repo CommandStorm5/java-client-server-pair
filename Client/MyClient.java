@@ -7,6 +7,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import java.time.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -111,19 +112,16 @@ public class MyClient {
             dout.close();
             s.close();
             if ((request & 0b00000001) == 0 && response.equals("0")) {
-                label.setText("<html><pre>Server closed</pre></html>");
-                panel.invalidate();
-                panel.validate();
+                draw.setText("Server closed", 1000);
+                draw.repaint();
             } else {
-                label.setText("<html><pre>Disconnected</pre></html>");
-                panel.invalidate();
-                panel.validate();
+                draw.setText("Disconnected", 1000);
+                draw.repaint();
             }
         } catch (Exception e){
             //System.err.println(Arrays.toString(e.getStackTrace()));
-            label.setText("<html><pre>Disconnected\n\nError code: " + e + "</pre></html>");
-            panel.invalidate();
-            panel.validate();
+            draw.setText("Disconnected; Error code: " + e, 1000);
+            draw.repaint();
         }
     }
     public static void Render(int size_x, int size_y, char[][] walls, String input, JPanel panel, JFrame frame, Draw draw) {
@@ -144,9 +142,13 @@ public class MyClient {
 }
 
 class Draw extends JPanel {
+    Clock clock = Clock.systemDefaultZone();
+    Font font = new Font("Dialog", Font.PLAIN, 20);
     int size_q = 20;
     int size_r = 10;
     int size_x, size_y;
+    long textTime = 0;
+    String text = "";
     char[][] data;
     char[][] walls;
     //data inputs
@@ -154,6 +156,7 @@ class Draw extends JPanel {
         this.size_x = size_x;
         this.size_y = size_y;
     }
+    void setText(String text, int time) {this.text = text; this.textTime = clock.millis() + time;}
     void setX(int size_x) {this.size_x = size_x;}
     void setY(int size_y) {this.size_y = size_y;}
     void setData(char[][] data) {this.data = data;}
@@ -184,6 +187,13 @@ class Draw extends JPanel {
                     }
                 }
             }
+        }
+        if (textTime > clock.millis()) {
+            g.setColor(Color.WHITE);
+            g.fillRect(0,0,size_y*size_q,size_x*size_q);
+            g.setColor(Color.BLACK);
+            g.setFont(font);
+            g.drawString(text, 100, 100);
         }
     }
 
