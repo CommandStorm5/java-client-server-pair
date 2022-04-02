@@ -131,7 +131,7 @@ public class MyClient {
         for (int i = 0; i < objects.length; i++) {
             String[] params = objects[i].split(",", 0);
             if (params[0].equals("P") || params[0].equals("B")) {
-                data[Integer.valueOf(params[1])][Integer.valueOf(params[2])] = params[3].charAt(0);
+                data[Integer.valueOf(params[1])][Integer.valueOf(params[2])] = params[3].charAt();
             }
         }
 
@@ -182,6 +182,8 @@ class Draw extends JPanel {
                     } else if (data[x][y] != 0) {
                         g.setColor(Color.RED);
                         g.fillOval(y*size_q, x*size_q, size_q, size_q);
+                        g.setColor(Color.BLACK);
+                        g.drawString("P"+data[x][y], y*size_q + size_q/6, x*size_q + size_q/4*3);
                     } else {
                         g.setColor(Color.WHITE);
                     }
