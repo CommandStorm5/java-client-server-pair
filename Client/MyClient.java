@@ -140,14 +140,18 @@ public class MyClient {
     public static void Render(int size_x, int size_y, char[][] walls, String input, JPanel panel, JFrame frame, Draw draw) {
         char[][] data = new char[size_x][size_y];
         //Parse objects
+        int playerID = -1;
         String[] objects = input.split("-", 0);
         for (int i = 0; i < objects.length; i++) {
             String[] params = objects[i].split(",", 0);
             if (params[0].equals("P") || params[0].equals("B")) {
                 data[Integer.valueOf(params[1])][Integer.valueOf(params[2])] = params[3].charAt(0);
             }
+            if (params[0].equals("ID")) {
+                playerID = Integer.valueOf(params[1]);
+            }
         }
-
+        draw.setID(playerID);
         draw.setData(data);
         draw.repaint();
     }
@@ -164,6 +168,7 @@ class Draw extends JPanel {
     long textTime = 0;
     String text = "";
     String subtext = "";
+    int playerID;
     char[][] data;
     char[][] walls;
     //data inputs
@@ -176,6 +181,7 @@ class Draw extends JPanel {
     void setY(int size_y) {this.size_y = size_y;}
     void setData(char[][] data) {this.data = data;}
     void setWalls(char[][] walls) {this.walls = walls;}
+    void setID(int playerID) {this.playerID = playerID;}
 
 
     @Override
@@ -195,7 +201,12 @@ class Draw extends JPanel {
                         g.setColor(Color.GRAY);
                         g.fillOval(y*size_q, (x*size_q)  + (size_r/2), size_q, size_r);
                     } else if (data[x][y] != 0) {
-                        g.setColor(Color.RED);
+                        if (data[x][y] == Character.forDigit(playerID,10)) {
+                            g.setColor(Color.GREEN);
+                        } else {
+                              g.setColor(Color.RED);
+                        }
+
                         g.fillOval(y*size_q, x*size_q, size_q, size_q);
                         g.setColor(Color.BLACK);
                         g.drawString("P"+data[x][y], y*size_q + size_q/6, x*size_q + size_q/4*3);
@@ -212,7 +223,7 @@ class Draw extends JPanel {
             g.setFont(font);
             g.drawString(text, 100, 100);
             g.setFont(smallFont);
-            g.drawString(subtext, 200, 100);
+            g.drawString(subtext, 100, 200);
         }
     }
 
