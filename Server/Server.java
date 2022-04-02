@@ -36,8 +36,8 @@ public class Server {
             }
         }
 
-        ss.add(generateServerSocket(420));
-        ss.add(generateServerSocket(421));
+        ss.add(generateServerSocket(25552));
+        ss.add(generateServerSocket(25553));
 
         // Exit on full shutdown
         while (!console_data.equals("stop")) {

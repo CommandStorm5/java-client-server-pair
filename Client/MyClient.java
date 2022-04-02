@@ -68,9 +68,9 @@ public class MyClient {
         frame.setSize(800,800);
         frame.setVisible(true);
         try {
-            String serverIP = "localhost";
+            String serverIP = "89.212.118.128";
             //Handshake
-            Socket handshake_s = new Socket(serverIP,420);
+            Socket handshake_s = new Socket(serverIP,25552);
             DataInputStream handshake_din = new DataInputStream(handshake_s.getInputStream());
             //Recieve initial config form server
             int size_x = handshake_din.readInt();
@@ -87,7 +87,7 @@ public class MyClient {
                 }
             }
             //Connect to socket
-            Socket s = new Socket(serverIP,421);
+            Socket s = new Socket(serverIP,25553);
             DataInputStream din=new DataInputStream(s.getInputStream());
             DataOutputStream dout=new DataOutputStream(s.getOutputStream());
             BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
