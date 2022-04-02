@@ -112,18 +112,31 @@ public class MyClient {
             dout.close();
             s.close();
             if ((request & 0b00000001) == 0 && response.equals("0")) {
-                draw.setText("Server closed", 1000);
+                draw.setText("Server closed", "", 1000);
                 draw.repaint();
+                wait(1000);
+                frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
             } else {
-                draw.setText("Disconnected", 1000);
+                draw.setText("Disconnected", "", 1000);
                 draw.repaint();
+                wait(1000);
+                frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
             }
         } catch (Exception e){
             //System.err.println(Arrays.toString(e.getStackTrace()));
-            draw.setText("Disconnected; Error code: " + e, 1000);
+            draw.setText("Disconnected; Error code:", e.toString(), 1000);
             draw.repaint();
         }
     }
+
+    public static void wait(int milis) {
+      try {
+          TimeUnit.MILLISECONDS.sleep(milis);
+      } catch (Exception e) {
+          System.err.println(e);
+      }
+    }
+
     public static void Render(int size_x, int size_y, char[][] walls, String input, JPanel panel, JFrame frame, Draw draw) {
         char[][] data = new char[size_x][size_y];
         //Parse objects
@@ -144,11 +157,13 @@ public class MyClient {
 class Draw extends JPanel {
     Clock clock = Clock.systemDefaultZone();
     Font font = new Font("Dialog", Font.PLAIN, 20);
+    Font smallFont = new Font("Dialog", Font.PLAIN, 10);
     int size_q = 20;
     int size_r = 10;
     int size_x, size_y;
     long textTime = 0;
     String text = "";
+    String subtext = "";
     char[][] data;
     char[][] walls;
     //data inputs
@@ -156,7 +171,7 @@ class Draw extends JPanel {
         this.size_x = size_x;
         this.size_y = size_y;
     }
-    void setText(String text, int time) {this.text = text; this.textTime = clock.millis() + time;}
+    void setText(String text, String subtext, int time) {this.text = text; this.subtext = subtext; this.textTime = clock.millis() + time;}
     void setX(int size_x) {this.size_x = size_x;}
     void setY(int size_y) {this.size_y = size_y;}
     void setData(char[][] data) {this.data = data;}
@@ -196,6 +211,8 @@ class Draw extends JPanel {
             g.setColor(Color.BLACK);
             g.setFont(font);
             g.drawString(text, 100, 100);
+            g.setFont(smallFont);
+            g.drawString(subtext, 200, 100);
         }
     }
 
