@@ -131,7 +131,7 @@ public class MyClient {
         for (int i = 0; i < objects.length; i++) {
             String[] params = objects[i].split(",", 0);
             if (params[0].equals("P") || params[0].equals("B")) {
-                data[Integer.valueOf(params[1])][Integer.valueOf(params[2])] = params[3].charAt();
+                data[Integer.valueOf(params[1])][Integer.valueOf(params[2])] = params[3].charAt(0);
             }
         }
 
