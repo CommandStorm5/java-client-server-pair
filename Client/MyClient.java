@@ -1,15 +1,13 @@
-import java.awt.BorderLayout;
-import java.awt.Container;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
+import java.awt.*;
+import java.awt.event.*;
 
-import java.awt.FlowLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import java.time.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -59,7 +57,8 @@ public class MyClient {
         Container contentPane = frame.getContentPane();
         JLabel label = new JLabel("<html>Connecting...</html>");
         panel.add(label);
-        frame.add(panel);
+        Draw draw = new Draw(0,0);
+        frame.add(draw);
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         JTextField textField = new JTextField();
@@ -69,15 +68,18 @@ public class MyClient {
         frame.setSize(800,800);
         frame.setVisible(true);
         try {
-            String serverIP = "localhost";
+            String serverIP = "89.212.118.128";
             //Handshake
-            Socket handshake_s = new Socket(serverIP,420);
+            Socket handshake_s = new Socket(serverIP,25552);
             DataInputStream handshake_din = new DataInputStream(handshake_s.getInputStream());
             //Recieve initial config form server
             int size_x = handshake_din.readInt();
             int size_y = handshake_din.readInt();
+            draw.setX(size_x);
+            draw.setY(size_y);
 
             char[][] walls = new char[size_x][size_y];
+            draw.setWalls(walls);
             String walls_string = handshake_din.readUTF();
             for (int x = 0; x < size_x; x++) {
                 for (int y = 0; y < size_y; y++) {
@@ -85,7 +87,7 @@ public class MyClient {
                 }
             }
             //Connect to socket
-            Socket s = new Socket(serverIP,421);
+            Socket s = new Socket(serverIP,25553);
             DataInputStream din=new DataInputStream(s.getInputStream());
             DataOutputStream dout=new DataOutputStream(s.getOutputStream());
             BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
@@ -103,64 +105,130 @@ public class MyClient {
                 //System.out.println("Packet Sent");
                 response = din.readUTF();
                 if (!response.equals("0")) {
-                    Render(size_x, size_y, walls, response, frame, panel, label);
+                    Render(size_x, size_y, walls, response, panel, frame, draw);
                 }
             }
             //Graceful shutdown
             dout.close();
             s.close();
             if ((request & 0b00000001) == 0 && response.equals("0")) {
-                label.setText("<html><pre>Server closed</pre></html>");
-                panel.invalidate();
-                panel.validate();
+                draw.setText("Server closed", "", 1000);
+                draw.repaint();
+                wait(1000);
+                frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
             } else {
-                label.setText("<html><pre>Disconnected</pre></html>");
-                panel.invalidate();
-                panel.validate();
+                draw.setText("Disconnected", "", 1000);
+                draw.repaint();
+                wait(1000);
+                frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
             }
         } catch (Exception e){
             //System.err.println(Arrays.toString(e.getStackTrace()));
-            label.setText("<html><pre>Disconnected\n\nError code: " + e + "</pre></html>");
-            panel.invalidate();
-            panel.validate();
+            draw.setText("Disconnected; Error code:", e.toString(), 1000);
+            draw.repaint();
         }
     }
-    public static void Render(int size_x, int size_y, char[][] walls, String input, JFrame frame, JPanel panel, JLabel label) {
+
+    public static void wait(int milis) {
+      try {
+          TimeUnit.MILLISECONDS.sleep(milis);
+      } catch (Exception e) {
+          System.err.println(e);
+      }
+    }
+
+    public static void Render(int size_x, int size_y, char[][] walls, String input, JPanel panel, JFrame frame, Draw draw) {
         char[][] data = new char[size_x][size_y];
-        //Draw objects
+        //Parse objects
+        int playerID = -1;
         String[] objects = input.split("-", 0);
         for (int i = 0; i < objects.length; i++) {
             String[] params = objects[i].split(",", 0);
             if (params[0].equals("P") || params[0].equals("B")) {
                 data[Integer.valueOf(params[1])][Integer.valueOf(params[2])] = params[3].charAt(0);
             }
-        }
-
-        //Render world
-        String render = "";
-        for (int x = 0; x < size_x; x++) {
-            for (int y = 0; y < size_y; y++) {
-                if (walls[x][y] == 'w') {
-                    render += "WW";
-                } else if (data[x][y] == 'v') {
-                    render += "||";
-                } else if (data[x][y] == 'h') {
-                    render += "==";
-                } else if (data[x][y] != 0) {
-                    render += ("P" + (char)(data[x][y]));
-                } else {
-                    render += "  ";
-                }
+            if (params[0].equals("ID")) {
+                playerID = Integer.valueOf(params[1]);
             }
-            render += "<br>";
         }
-        label.setText("<html><pre>" + render + "</pre></html>");
-        //panel.remove(label);
-        //panel.add(label);
-        panel.invalidate();
-        panel.validate();
-        //frame.invalidate();
-        //frame.validate();
+        draw.setID(playerID);
+        draw.setData(data);
+        draw.repaint();
     }
 
+}
+
+class Draw extends JPanel {
+    Clock clock = Clock.systemDefaultZone();
+    Font font = new Font("Dialog", Font.PLAIN, 20);
+    Font smallFont = new Font("Dialog", Font.PLAIN, 10);
+    int size_q = 20;
+    int size_r = 10;
+    int size_x, size_y;
+    long textTime = 0;
+    String text = "";
+    String subtext = "";
+    int playerID;
+    char[][] data;
+    char[][] walls;
+    //data inputs
+    public Draw(int size_x, int size_y) {
+        this.size_x = size_x;
+        this.size_y = size_y;
+    }
+    void setText(String text, String subtext, int time) {this.text = text; this.subtext = subtext; this.textTime = clock.millis() + time;}
+    void setX(int size_x) {this.size_x = size_x;}
+    void setY(int size_y) {this.size_y = size_y;}
+    void setData(char[][] data) {this.data = data;}
+    void setWalls(char[][] walls) {this.walls = walls;}
+    void setID(int playerID) {this.playerID = playerID;}
+
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        if (data != null) {
+            //draw all the things
+            for (int x = 0; x < size_x; x++) {
+                for (int y = 0; y < size_y; y++) {
+                    if (walls[x][y] == 'w') {
+                        g.setColor(Color.BLACK);
+                        g.fillRect(y*size_q, x*size_q, size_q, size_q);
+                    } else if (data[x][y] == 'v') {
+                        g.setColor(Color.GRAY);
+                        g.fillOval((y*size_q)  + (size_r/2), x*size_q, size_r, size_q);
+                    } else if (data[x][y] == 'h') {
+                        g.setColor(Color.GRAY);
+                        g.fillOval(y*size_q, (x*size_q)  + (size_r/2), size_q, size_r);
+                    } else if (data[x][y] != 0) {
+                        if (data[x][y] == Character.forDigit(playerID,10)) {
+                            g.setColor(Color.GREEN);
+                        } else {
+                              g.setColor(Color.RED);
+                        }
+
+                        g.fillOval(y*size_q, x*size_q, size_q, size_q);
+                        g.setColor(Color.BLACK);
+                        g.drawString("P"+data[x][y], y*size_q + size_q/6, x*size_q + size_q/4*3);
+                    } else {
+                        g.setColor(Color.WHITE);
+                    }
+                }
+            }
+        }
+        if (textTime > clock.millis()) {
+            g.setColor(Color.WHITE);
+            g.fillRect(0,0,size_y*size_q,size_x*size_q);
+            g.setColor(Color.BLACK);
+            g.setFont(font);
+            g.drawString(text, 100, 100);
+            g.setFont(smallFont);
+            g.drawString(subtext, 100, 200);
+        }
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+        return new Dimension(800, 800);
+    }
 }

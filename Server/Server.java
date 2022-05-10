@@ -36,8 +36,8 @@ public class Server {
             }
         }
 
-        ss.add(generateServerSocket(420));
-        ss.add(generateServerSocket(421));
+        ss.add(generateServerSocket(25552));
+        ss.add(generateServerSocket(25553));
 
         // Exit on full shutdown
         while (!console_data.equals("stop")) {
@@ -181,7 +181,7 @@ public class Server {
         for (int i = 0; i < players.size(); i++) {
             //System.out.println("Writing: " + i);
             try {
-                dout.get(i).writeUTF(data);
+                dout.get(i).writeUTF("-ID," + i + data);
                 dout.get(i).flush();
             } catch (Exception e){
                 System.err.println("Write: " + e);
